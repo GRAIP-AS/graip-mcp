@@ -1,0 +1,28 @@
+{
+  "name": "graip-mcp",
+  "private": true,
+  "version": "1.0.0",
+  "main": "dist/index.js",
+  "bin": {
+    "graip-mcp": "dist/index.js"
+  },
+  "scripts": {
+    "build": "tsc",
+    "dev": "tsc --watch",
+    "start": "node dist/index.js",
+    "typecheck": "tsc --noEmit"
+  },
+  "author": "Graip.AI",
+  "license": "MIT",
+  "description": "MCP server for Graip.AI document processing API",
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.27.1",
+    "express": "^5.2.1",
+    "zod": "^4.3.6"
+  },
+  "devDependencies": {
+    "@types/express": "^5.0.6",
+    "@types/node": "^24.10.1",
+    "typescript": "^5.9.3"
+  }
+}

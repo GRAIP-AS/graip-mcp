@@ -1,0 +1,1508 @@
+openapi: 3.0.1
+info:
+  title: Graip.AI Rest API
+  description: To get API key, go to Flow -> Settings -> Integration -> New Access Token. Additional information can be found at [https://graip.atlassian.net/wiki/x/AYBvOg](https://graip.atlassian.net/wiki/x/AYBvOg)
+  contact:
+    email: support@graip.ai
+  version: 1.0.0
+servers:
+  - url: https://app.graip.ai/api
+tags:
+  - name: misc
+    description: Integration toolchain
+  - name: request
+    description: Manage Graip requests
+  - name: subscriber
+    description: Manage callbacks (webhooks) to your system
+paths:
+  /v1/version:
+    get:
+      tags:
+        - misc
+      summary: Get API version
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  version:
+                    type: string
+              example: { 'version': 'v1' }
+      security:
+        - graip_auth: []
+  /v1/{flowId}/request:
+    post:
+      tags:
+        - request
+      summary: Add new request
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: ['file']
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                process:
+                  type: boolean
+                  description: Start processing of uploaded request?
+                asyncPreprocess:
+                  type: boolean
+                  description: Preprocess uploaded request asynchronously?
+                pagesToProcess:
+                  type: string
+                  description: comma delimited list of pages with ranges, e.g 1,2-4,5,-1
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Request'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_UNSUPPORTED_FORMAT:
+                  summary: 'ERROR_UNSUPPORTED_FORMAT'
+                  value:
+                    error: 'ERROR_UNSUPPORTED_FORMAT'
+                    details: 'File mime type is not supported in current flow'
+                ERROR_TOO_MANY_PAGES:
+                  summary: 'ERROR_TOO_MANY_PAGES'
+                  value:
+                    error: 'ERROR_TOO_MANY_PAGES'
+                    details: 'Document contains too many pages'
+                ERROR_COURRUPTED_FILE:
+                  summary: 'ERROR_COURRUPTED_FILE'
+                  value:
+                    error: 'ERROR_COURRUPTED_FILE'
+                    details: 'Cannot read a file, file may be damaged, corrupted or have a password'
+                ERROR_PAGES_LIMIT_REACHED:
+                  summary: 'ERROR_PAGES_LIMIT_REACHED'
+                  value:
+                    error: 'ERROR_PAGES_LIMIT_REACHED'
+                    details: 'Monthly document page upload limit has been reached'
+                ERROR_FILE_TOO_SMALL:
+                  summary: 'ERROR_FILE_TOO_SMALL'
+                  value:
+                    error: 'ERROR_FILE_TOO_SMALL'
+                    details: 'Uploaded file is too small, check file content'
+                ERROR_FILE_TOO_LARGE:
+                  summary: 'ERROR_FILE_TOO_LARGE'
+                  value:
+                    error: 'ERROR_FILE_TOO_LARGE'
+                    details: "The file size exceeds the allowed limit."
+                ERROR_FLOW_IS_DISABLED:
+                  summary: 'ERROR_FLOW_IS_DISABLED'
+                  value:
+                    error: 'ERROR_FLOW_IS_DISABLED'
+                    details: 'Operation is not allowed for disabled flow'
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+                ERROR_HOOK_EXECUTION_FAILED:
+                  summary: 'ERROR_HOOK_EXECUTION_FAILED'
+                  value:
+                    error: 'ERROR_HOOK_EXECUTION_FAILED'
+                    details: 'Hook PRE_REQUEST execution is failed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+            - write:requests
+  /v2/{flowId}/request:
+    post:
+      tags:
+        - request
+      summary: Upload file and start processing
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: ['file']
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                pagesToProcess:
+                  type: string
+                  description: comma delimited list of pages with ranges, e.g 1,2-4,5,-1
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/Request'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_UNSUPPORTED_FORMAT:
+                  summary: 'ERROR_UNSUPPORTED_FORMAT'
+                  value:
+                    error: 'ERROR_UNSUPPORTED_FORMAT'
+                    details: 'File mime type is not supported in current flow'
+                ERROR_TOO_MANY_PAGES:
+                  summary: 'ERROR_TOO_MANY_PAGES'
+                  value:
+                    error: 'ERROR_TOO_MANY_PAGES'
+                    details: 'Document contains too many pages'
+                ERROR_COURRUPTED_FILE:
+                  summary: 'ERROR_COURRUPTED_FILE'
+                  value:
+                    error: 'ERROR_COURRUPTED_FILE'
+                    details: 'Cannot read a file, file may be damaged, corrupted or have a password'
+                ERROR_PAGES_LIMIT_REACHED:
+                  summary: 'ERROR_PAGES_LIMIT_REACHED'
+                  value:
+                    error: 'ERROR_PAGES_LIMIT_REACHED'
+                    details: 'Monthly document page upload limit has been reached'
+                ERROR_FILE_TOO_SMALL:
+                  summary: 'ERROR_FILE_TOO_SMALL'
+                  value:
+                    error: 'ERROR_FILE_TOO_SMALL'
+                    details: 'Uploaded file is too small, check file content'
+                ERROR_FILE_TOO_LARGE:
+                  summary: 'ERROR_FILE_TOO_LARGE'
+                  value:
+                    error: 'ERROR_FILE_TOO_LARGE'
+                    details: "The file size exceeds the allowed limit."
+                ERROR_FLOW_IS_DISABLED:
+                  summary: 'ERROR_FLOW_IS_DISABLED'
+                  value:
+                    error: 'ERROR_FLOW_IS_DISABLED'
+                    details: 'Operation is not allowed for disabled flow'
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+                ERROR_HOOK_EXECUTION_FAILED:
+                  summary: 'ERROR_HOOK_EXECUTION_FAILED'
+                  value:
+                    error: 'ERROR_HOOK_EXECUTION_FAILED'
+                    details: 'Hook PRE_REQUEST execution is failed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+            - write:requests
+  /v1/{flowId}/request/bulk:
+    post:
+      tags:
+        - request
+      summary: Add new requests bulk
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: ['files']
+              properties:
+                process:
+                  type: boolean
+                  description: Start processing of all uploaded requests?
+                files:
+                  type: array
+                  minItems: 1
+                  items:
+                    type: string
+                    format: binary
+                pagesToProcess:
+                  type: string
+                  description: comma delimited list of pages with ranges, e.g 1,2-4,5,-1
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  packageId:
+                    type: string
+                    description: packageId of uploaded requests
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+                ERROR_REQUEST_BODY_IS_TOO_LARGE:
+                  summary: 'ERROR_REQUEST_BODY_IS_TOO_LARGE'
+                  value:
+                    error: 'ERROR_REQUEST_BODY_IS_TOO_LARGE'
+                    details: 'Request body is too large'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - write:requests
+            - read:requests
+  /v1/{flowId}/request/extract:
+    post:
+      tags:
+        - request
+      summary: Extract data from document
+      description: Upload a document, process it to extract data, and return the extracted information within a single HTTP request. By default, neither the document nor the extracted data will be stored, even if processing fails. Set a long timeout (10 minutes) for this API call to accommodate the operation.
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          multipart/form-data:
+            schema:
+              type: object
+              required: ['file']
+              properties:
+                file:
+                  type: string
+                  format: binary
+                title:
+                  type: string
+                pagesToProcess:
+                  type: string
+                  description: comma delimited list of pages with ranges, e.g 1,2-4,5,-1
+                persistData:
+                  type: boolean
+                  default: false
+                  description: Should persist data after extraction?
+                extractionTimeout:
+                  type: integer
+                  minimum: 30
+                  maximum: 3600
+                  default: 600
+                  description: Maximum time in seconds to wait for extraction to complete. Must be between 30 and 3600 seconds (30s – 60min). Defaults to 600 seconds (10 minutes).
+      responses:
+        201:
+          description: Created
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/RequestWithData'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_UNSUPPORTED_FORMAT:
+                  summary: 'ERROR_UNSUPPORTED_FORMAT'
+                  value:
+                    error: 'ERROR_UNSUPPORTED_FORMAT'
+                    details: 'File mime type is not supported in current flow'
+                ERROR_TOO_MANY_PAGES:
+                  summary: 'ERROR_TOO_MANY_PAGES'
+                  value:
+                    error: 'ERROR_TOO_MANY_PAGES'
+                    details: 'Document contains too many pages'
+                ERROR_COURRUPTED_FILE:
+                  summary: 'ERROR_COURRUPTED_FILE'
+                  value:
+                    error: 'ERROR_COURRUPTED_FILE'
+                    details: 'Cannot read a file, file may be damaged, corrupted or have a password'
+                ERROR_PAGES_LIMIT_REACHED:
+                  summary: 'ERROR_PAGES_LIMIT_REACHED'
+                  value:
+                    error: 'ERROR_PAGES_LIMIT_REACHED'
+                    details: 'Monthly document page upload limit has been reached'
+                ERROR_FILE_TOO_SMALL:
+                  summary: 'ERROR_FILE_TOO_SMALL'
+                  value:
+                    error: 'ERROR_FILE_TOO_SMALL'
+                    details: 'Uploaded file is too small, check file content'
+                ERROR_FILE_TOO_LARGE:
+                  summary: 'ERROR_FILE_TOO_LARGE'
+                  value:
+                    error: 'ERROR_FILE_TOO_LARGE'
+                    details: "The file size exceeds the allowed limit."
+                ERROR_FLOW_IS_DISABLED:
+                  summary: 'ERROR_FLOW_IS_DISABLED'
+                  value:
+                    error: 'ERROR_FLOW_IS_DISABLED'
+                    details: 'Operation is not allowed for disabled flow'
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+            - write:requests
+  /v1/{flowId}/request/list:
+    get:
+      tags:
+        - request
+      summary: List requests
+      description: status_info field will be not null for requests in ERROR status. List of errors that can occur during document processing is described in Schema
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: offset
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            format: decimal
+            default: 0
+        - name: limit
+          in: query
+          description: Pagination offset
+          schema:
+            type: integer
+            format: decimal
+            default: 10
+        - name: filter
+          in: query
+          description: 'For example, to get processed requests paste { "status": "PROCESSED" } filter'
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  createdAt:
+                    type: string
+                  title:
+                    type: string
+                  label:
+                    type: array
+                    items:
+                      type: string
+                  createdBy:
+                    type: string
+                  assignee:
+                    type: string
+                  package:
+                    type: string
+                  status:
+                    type: string
+                    enum:
+                      - DRAFT
+                      - PROCESSING
+                      - ERROR
+                      - PROCESSED
+                  approvalStatus:
+                    type: string
+                    enum:
+                      - APPROVED
+                      - REJECTED
+                      - PENDING
+                  header:
+                    $ref: '#/components/schemas/OperationFilter'
+                  item:
+                    $ref: '#/components/schemas/OperationFilter'
+                  classificationId:
+                    type: string
+                  exported:
+                    type: boolean
+                  archived:
+                    type: boolean
+                  deleted:
+                    type: boolean
+                  textSearch:
+                    type: string
+      responses:
+        200:
+          description: List of Requests
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  count:
+                    type: integer
+                    example: 23
+                  items:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Request'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+  /v1/{flowId}/request/{requestId}:
+    get:
+      tags:
+        - request
+      summary: Get request by id
+      description: status_info field will be not null for requests in ERROR status. List of errors that can occur during document processing is described in Schema
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RequestWithVersions'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+    delete:
+      tags:
+        - request
+      summary: Delete request
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Deleted sucessfully
+          content:
+            application/json:
+              schema:
+                type: object
+                $ref: '#/components/schemas/DeleteSuccessResponse'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+            - write:requests
+  /v1/{flowId}/request/{requestId}/process:
+    put:
+      tags:
+        - request
+      summary: Start Request processing
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Request data
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Request'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        409:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_REQUEST_STATUS_CONFLICT:
+                  summary: 'ERROR_REQUEST_STATUS_CONFLICT'
+                  value:
+                    error: 'ERROR_REQUEST_STATUS_CONFLICT'
+                    details: 'Request status conflict: failed to start processing for request that is in PROCESSING or PROCESSED status'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+            - write:requests
+  /v1/{flowId}/request/{requestId}/export/json:
+    get:
+      tags:
+        - request
+      summary: Get request processing result in JSON
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Extracted data
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        409:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_REQUEST_STATUS_CONFLICT:
+                  summary: 'ERROR_REQUEST_STATUS_CONFLICT'
+                  value:
+                    error: 'ERROR_REQUEST_STATUS_CONFLICT'
+                    details: 'Request status conflict: exported request must be in PROCESSED status'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+  /v2/{flowId}/request/{requestId}/export/json:
+    get:
+      tags:
+        - request
+      summary: Get request processing result in JSON(Improved result structure)
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: versionId
+          in: query
+          description: ID of the request version (optional)
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Request processing data
+          content:
+            application/json:
+              schema:
+                type: object
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+                ERROR_EXPORT_RESULT_IS_NOT_READY:
+                  summary: 'ERROR_EXPORT_RESULT_IS_NOT_READY'
+                  value:
+                    error: 'ERROR_EXPORT_RESULT_IS_NOT_READY'
+                    details: 'Request is not in PROCESSED status'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+  /v2/{flowId}/request/{requestId}/export/json/simplified:
+    get:
+      tags:
+        - request
+      summary: Get request processing result in simplified JSON format
+      description: Returns a simplified JSON structure with headers object and items array
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: versionId
+          in: query
+          description: ID of the request version (optional)
+          required: false
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Simplified request processing data
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  headers:
+                    type: object
+                    description: Header fields and their values
+                  items:
+                    type: array
+                    description: Array of line items
+                    items:
+                      type: object
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+                ERROR_EXPORT_RESULT_IS_NOT_READY:
+                  summary: 'ERROR_EXPORT_RESULT_IS_NOT_READY'
+                  value:
+                    error: 'ERROR_EXPORT_RESULT_IS_NOT_READY'
+                    details: 'Request is not in PROCESSED status'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+  /v1/{flowId}/request/{requestId}/download:
+    get:
+      tags:
+        - request
+      summary: Download request file
+      description: Download original or processed document associated with request
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: type
+          in: query
+          description: File type
+          schema:
+            type: string
+            enum:
+              - original
+              - processed
+            default: processed
+      responses:
+        200:
+          description: Request
+          content:
+            application/pdf:
+              schema:
+                type: string
+                format: binary
+            image/jpeg:
+              schema:
+                type: string
+                format: binary
+            image/png:
+              schema:
+                type: string
+                format: binary
+            application/octet-stream:
+              schema:
+                type: string
+                format: binary
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        409:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_REQUEST_STATUS_CONFLICT:
+                  summary: 'ERROR_REQUEST_STATUS_CONFLICT'
+                  value:
+                    error: 'ERROR_REQUEST_STATUS_CONFLICT'
+                    details: 'Request status conflict: file is not available for download'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+  /v1/{flowId}/request/{requestId}/approval-stages:
+    get:
+      tags:
+        - request
+      summary: Get request approval stages
+      description: Returns all approval stages for a request, including approver details (user ID and email)
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: requestId
+          in: path
+          description: ID of request
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: List of approval stages
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/ApprovalStage'
+        400:
+          description: ''
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:requests
+  /v1/{flowId}/subscribers:
+    get:
+      tags:
+        - subscriber
+      summary: Get subscribers
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: Subscribers
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Subscriber'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - read:subscribers
+    post:
+      tags:
+        - subscriber
+      summary: Subscribe for Graip events
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateSubscriber'
+      responses:
+        201:
+          description: Subscribed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Subscriber'
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      callbacks:
+        'Request webhooks':
+          'https://your_callback_url':
+            post:
+              requestBody:
+                content:
+                  application/json:
+                    schema:
+                      $ref: '#/components/schemas/CallbackBody'
+              responses:
+                200:
+                  description: OK
+      security:
+        - graip_auth:
+            - write:subscribers
+  /v1/{flowId}/subscribers/{subscriberId}:
+    delete:
+      tags:
+        - subscriber
+      summary: Unsubscribe from callback
+      parameters:
+        - name: flowId
+          in: path
+          description: ID of flow
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - name: subscriberId
+          in: path
+          description: ID of Subscriber
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        200:
+          description: OK
+        400:
+          description: ''
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+              examples:
+                ERROR_MALFORMED_INPUT:
+                  summary: 'ERROR_MALFORMED_INPUT'
+                  value:
+                    error: 'ERROR_MALFORMED_INPUT'
+                    details: 'Request input is malformed'
+        401:
+          $ref: '#/responses/ErrUnauthorized'
+        403:
+          $ref: '#/responses/ErrForbidden'
+        404:
+          $ref: '#/responses/ErrNotFound'
+        500:
+          $ref: '#/responses/ErrServerError'
+      security:
+        - graip_auth:
+            - write:subscribers
+responses:
+    ErrServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'ERROR_SERVER_ERROR'
+              details:
+                type: string
+                example: 'Internal server error'
+    ErrForbidden:
+      description: Forbidden
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'ERROR_FORBIDDEN'
+              details:
+                type: string
+                example: 'No enough permissions to access requested resource or entity'
+    ErrNotFound:
+      description: Not found
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'ERROR_NOT_FOUND'
+              details:
+                type: string
+                example: 'Requested resource or entity is not found'
+    ErrUnauthorized:
+      description: Unauthorized
+      content:
+        application/json:
+          schema:
+            type: object
+            properties:
+              error:
+                type: string
+                example: 'ERROR_UNAUTHORIZED'
+              details:
+                type: string
+                example: 'Invalid auth credentials'
+
+components:
+  schemas:
+    DeleteSuccessResponse:
+      type: object
+      properties:
+        deleted:
+          type: boolean
+    OperationFilter:
+      type: object
+      properties:
+        key:
+          type: string
+        value:
+          type: string
+        operation:
+          type: string
+    Error:
+      type: object
+      properties:
+        error:
+          type: string
+        details:
+          type: string
+    Request:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+          example: 'Document 1234'
+        approval_status:
+          type: string
+          enum:
+            - APPROVED
+            - REJECTED
+            - PENDING
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum:
+            - DRAFT
+            - PROCESSING
+            - ERROR
+            - PROCESSED
+        status_info:
+          oneOf:
+            - type: object
+              nullable: true
+              example: null
+            - $ref: '#/components/schemas/ErrServerError'
+            - $ref: '#/components/schemas/ErrHookExecutionFailed'
+            - $ref: '#/components/schemas/ErrThirdPartyServiceNotAvaliable'
+            - $ref: '#/components/schemas/ErrInvalidFileStructure'
+            - $ref: '#/components/schemas/ErrExtractionFailed'
+            - $ref: '#/components/schemas/ErrModelProcessingTimeout'
+            - $ref: '#/components/schemas/ErrInsufficientTextQuality'
+            - $ref: '#/components/schemas/ErrUnsupportedLanguage'
+            - $ref: '#/components/schemas/ErrMlInference'
+    RequestWithVersions:
+      allOf:
+        - $ref: '#/components/schemas/Request'
+        - type: object
+          properties:
+            versions:
+              type: array
+              items:
+                $ref: '#/components/schemas/Version'
+
+    RequestWithData:
+      allOf:
+        - $ref: '#/components/schemas/Request'
+        - type: object
+          properties:
+            data:
+              type: object
+              description: Extracted data
+    Version:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+          example: 'Default'
+        created_at:
+          type: string
+          format: date-time
+    CreateSubscriber:
+      type: object
+      properties:
+        url:
+          type: string
+          format: uri
+        event:
+          type: string
+          enum:
+            - request_created
+            - request_updated
+            - request_done
+            - request_error
+    Subscriber:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        url:
+          type: string
+          format: uri
+        event:
+          type: string
+          enum:
+            - request_created
+            - request_updated
+            - request_done
+            - request_error
+    CallbackBody:
+      type: object
+      properties:
+        event_id:
+          type: string
+          format: uuid
+        event:
+          type: string
+          enum:
+            - request_created
+            - request_updated
+            - request_done
+            - request_error
+        subscriber_id:
+          type: string
+          format: uuid
+        data:
+          type: object
+        created_at:
+          type: string
+          format: date-time
+    ErrServerError:
+      type: object
+      properties:
+        error:
+          type: string
+          example: 'ERROR_SERVER_ERROR'
+        details:
+          type: string
+          example: 'Internal server error'
+    ErrHookExecutionFailed:
+      type: object
+      properties:
+        error:
+          type: string
+          example: 'ERROR_HOOK_EXECUTION_FAILED'
+        details:
+          type: string
+          example: 'Hook PRE_REQUEST execution is failed'
+    ErrThirdPartyServiceNotAvaliable:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "ERROR_THIRD_PARTY_SERVICE_NOT_AVAILABLE"
+        details:
+          type: string
+          example: "A required third-party service is currently unavailable. Please try again later."
+    ErrInvalidFileStructure:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "ERROR_INVALID_FILE_STRUCTURE"
+        details:
+          type: string
+          example: "The file structure is invalid or unreadable by the extraction model."
+    ErrExtractionFailed:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "ERROR_EXTRACTION_FAILED"
+        details:
+          type: string
+          example: "Data extraction failed due to an unexpected issue with the content."
+    ErrModelProcessingTimeout:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "ERROR_MODEL_PROCESSING_TIMEOUT"
+        details:
+          type: string
+          example: "The ML model took too long to process the file."
+    ErrInsufficientTextQuality:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "ERROR_INSUFFICIENT_TEXT_QUALITY"
+        details:
+          type: string
+          example: "The document's text quality is too low for accurate extraction."
+    ErrUnsupportedLanguage:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "ERROR_UNSUPPORTED_LANGUAGE"
+        details:
+          type: string
+          example: "The detected language is not supported by the extraction model."
+    ErrMlInference:
+      type: object
+      properties:
+        error:
+          type: string
+          example: "ERROR_ML_INFERENCE_ERROR"
+        details:
+          type: string
+          example: "Error during ml inference."
+    ApprovalStage:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        stage_index:
+          type: integer
+        name:
+          type: string
+          example: 'Stage 1'
+        item_row_index:
+          type: integer
+          nullable: true
+        approvals:
+          type: array
+          items:
+            $ref: '#/components/schemas/Approval'
+        created_at:
+          type: string
+          format: date-time
+        updated_at:
+          type: string
+          format: date-time
+    Approval:
+      type: object
+      properties:
+        id:
+          type: string
+          format: uuid
+        user_id:
+          type: string
+          format: uuid
+        email:
+          type: string
+          format: email
+        status:
+          type: string
+          enum:
+            - PENDING
+            - APPROVED
+            - REJECTED
+        comment:
+          type: string
+          nullable: true
+        approved_at:
+          type: string
+          format: date-time
+          nullable: true
+  securitySchemes:
+    graip_auth:
+      type: apiKey
+      in: header
+      name: Authorization
